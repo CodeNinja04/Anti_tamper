@@ -61,11 +61,11 @@ class Contract(BaseModel):
     contract_id :str
     usernameA : str
     usernameB : str
-    signatureA : str
-    signatureB: str
-    contract: str
-    hash_contractA:str
-    hash_contractB:str
+    # signatureA : str
+    # signatureB: str
+    # contract: str
+    # hash_contractA:str
+    # hash_contractB:str
 
 class Sign(BaseModel):
     createdby: str
@@ -78,10 +78,6 @@ class Sign(BaseModel):
     contract_id : str
     
     
-
-    
-
-
 @app.get("/")
 def read_root(current_user:User = Depends(get_current_user)):
 	return {"data":"Hello OWrld"}
@@ -117,7 +113,6 @@ def create_contract( request: ContractForm = Depends()):
     contract_is["contract_id"] = str(uuid.uuid4())
     contract_is = db["ContractForm"].insert(contract_is)
     return {"output": "created"}
-
 
 
 
@@ -170,15 +165,29 @@ def verify(request:Contract):
     
     contract_id = db["ContractForm"].find_one({"contract_id":request.contract_id})
     
-    if contract_id:
-        verify=dict(request)
-        if(request.signatureA and request.signatureB):
+    print(contract_id["contract"])
+    verify=dict(request)
+    # contract=dict(contract_id)
+    # return {"result":"done"}
+    
+    if (contract_id):
+        
+        if(True):
+        # if(request.signatureA and request.signatureB):
             
             #logic for verification
             
-            verificationA=jws.verify(request.signatureA, 'secret', algorithms=['HS256'])
-            verificationB = jws.verify(
-                request.signatureB, 'secret', algorithms=['HS256'])
+            contractA = db["Contract"].find_one({"signtype":False,"contract_id":request.contract_id})
+            if(contractA):
+                return {"error":"contractA is not defined"}
+            contractB = db["Contract"].find_one(
+                {"signtype": True, "contract_id": request.contract_id})
+            
+            return {"result":"done"}
+            
+            # verificationA=jws.verify(request.signatureA, 'secret', algorithms=['HS256'])
+            # verificationB = jws.verify(
+            #     request.signatureB, 'secret', algorithms=['HS256'])
         else:
             return {"message" :"contract is not signed by both parties"}
     else:
