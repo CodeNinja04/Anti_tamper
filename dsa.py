@@ -6,3 +6,4 @@ print(signed)
 
 verification=jws.verify(signed, 'secret', algorithms=['HS256'])
 print(verification)
+
