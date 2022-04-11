@@ -35,6 +35,7 @@ class User(BaseModel):
     username: str
     company: str
     password: str
+    private : str
 class Login(BaseModel):
 	username: str
 	password: str

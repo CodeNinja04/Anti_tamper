@@ -1,19 +1,8 @@
-from ecdsa import SigningKey
-sk = SigningKey.generate() # uses NIST192p
-print(sk)
-vk = sk.verifying_key
-print(vk)
-msg=b"New Message"
-msg2=b"New Message"
-signature = sk.sign(msg)
-temp=signature
-print(signature)
-print(temp)
-try:
-    assert vk.verify(temp, msg2)
-except:
-    print("Signature not verified")
-
-print("Succesfull")
+from jose import jws
+contract="This is a sample contract if you are agree on this pls sign the doc"
+signed = jws.sign({"contract":contract}, 'secret', algorithm='HS256')
+print(signed)
 
 
+verification=jws.verify(signed, 'secret', algorithms=['HS256'])
+print(verification)
