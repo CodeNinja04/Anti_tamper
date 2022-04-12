@@ -2,10 +2,11 @@ uvicorn
 fastapi
 jwttoken
 python-jose
-dotenv
+python-dotenv
 passlib
 pydantic
 pymongo
 dnspython
 cryptography
 openpyxl
+fastapi-users
