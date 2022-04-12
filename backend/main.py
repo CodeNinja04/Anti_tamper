@@ -42,7 +42,7 @@ class User(BaseModel):
     email : str
     name: str
     password: str
-    
+    private : str
 class Login(BaseModel):
 	username: str
 	password: str
@@ -55,10 +55,12 @@ class TokenData(BaseModel):
  
 class ContractForm(BaseModel):
     contract:str
-    #contract_id:UUID
+    contract_id:str
+    userA: str
+    userB: str
 
 class Contract(BaseModel):
-    contract_id :str
+    #contract_id :str
     usernameA : str
     usernameB : str
     # signatureA : str
@@ -68,14 +70,12 @@ class Contract(BaseModel):
     # hash_contractB:str
 
 class Sign(BaseModel):
-    createdby: str
-    createdfor: str
-    contract : str
+    # createdby: str
+    # createdfor: str
+    #contract : str
     username: str
     password: str
-    signtype : bool
-    #signature : str
-    contract_id : str
+    #contract_id : str
     
     
 @app.get("/")
@@ -110,7 +110,7 @@ def login(request:OAuth2PasswordRequestForm = Depends()):
 @app.post("/contract/new")
 def create_contract( request: ContractForm = Depends()):
     contract_is = dict(request)
-    contract_is["contract_id"] = str(uuid.uuid4())
+    #contract_is["contract_id"] = str(uuid.uuid4())
     contract_is = db["ContractForm"].insert(contract_is)
     return {"output": "created"}
 
@@ -125,47 +125,60 @@ def sign(id: str,request:Sign):
     if not Hash.verify(user["password"],request.password):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail = f'Wrong Username or password')
     
-    signed = jws.sign({"contract": request.contract}, request.password, algorithm='HS256')
-    sign_object = dict(request)
-    hashed_pass = Hash.bcrypt(request.password)
-    sign_object["password"] = hashed_pass
-    sign_object["signatureA"]= signed
-    sign_object["contract_form"]=id
-    db["Contract"].insert(sign_object)
+    contract = db["ContractForm"].find_one({"contract_id":id})
+    if(contract):
+        signed = jws.sign({"contract": contract["contract"]}, user["private"], algorithm='HS256')
+        sign_object = dict(request)
+        hashed_pass = Hash.bcrypt(request.password)
+        sign_object["contract"] =contract["contract"] 
+        sign_object["password"] = hashed_pass
+        sign_object["signatureA"]= signed
+        sign_object["createdBy"] = contract["userA"]
+        sign_object["createdfor"] = contract["userB"]
+        sign_object["flag"] = True
+        sign_object["contract_id"]=id
+        db["Contract"].insert(sign_object)
     
-    return {"message":"you signed the contract"}
+        return {"message":"you signed the contract.signatureA completed"}
+    else:
+        return {"error":"contract doesnt exists"}
+
 
 
 @app.post("/contract/{id}/signb")
-def sign(id: str,request: Sign):
-
-    user = db["users"].find_one({"username": request.username})
+def sign(id: str,request:Sign):
+    
+    user = db["users"].find_one({"username":request.username})
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f'No user found with this {request.username} username')
-    if not Hash.verify(user["password"], request.password):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f'Wrong Username or password')
-
-    signed = jws.sign({"contract": request.contract},
-                      request.password, algorithm='HS256')
-
-    sign_object = dict(request)
-    hashed_pass = Hash.bcrypt(request.password)
-    sign_object["password"] = hashed_pass
-    sign_object["signatureB"] = signed
-    sign_object["contract_form"] = id
-    db["Contract"].insert(sign_object)
-
-    return {"message": "you signed the contract"}
-
-
-@app.post("/contract/verify")
-def verify(request:Contract):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail = f'No user found with this {request.username} username')
+    if not Hash.verify(user["password"],request.password):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail = f'Wrong Username or password')
     
-    contract_id = db["ContractForm"].find_one({"contract_id":request.contract_id})
+    contract = db["ContractForm"].find_one({"contract_id":id})
+    if(contract):
+        signed = jws.sign({"contract": contract["contract"]}, user["private"], algorithm='HS256')
+        sign_object = dict(request)
+        hashed_pass = Hash.bcrypt(request.password)
+        sign_object["contract"] =contract["contract"]
+        sign_object["password"] = hashed_pass
+        sign_object["signatureB"]= signed
+        sign_object["createdBy"] = contract["userA"]
+        sign_object["createdfor"] = contract["userB"]
+        sign_object["flag"] = False
+        sign_object["contract_id"]=id
+        db["Contract"].insert(sign_object)
     
-    print(contract_id["contract"])
+        return {"message":"you signed the contract.signatureB completed"}
+    else:
+        return {"error":"contract doesnt exists"}
+
+
+@app.post("/contract/{id}/verify")
+def verify(id: str,request: Contract):
+    
+    contract_id = db["ContractForm"].find_one({"contract_id":id})
+    
+    #print(contract_id["contract"])
     verify=dict(request)
     # contract=dict(contract_id)
     # return {"result":"done"}
@@ -177,13 +190,38 @@ def verify(request:Contract):
             
             #logic for verification
             
-            contractA = db["Contract"].find_one({"signtype":False,"contract_id":request.contract_id})
-            if(contractA):
-                return {"error":"contractA is not defined"}
-            contractB = db["Contract"].find_one(
-                {"signtype": True, "contract_id": request.contract_id})
+            contractA = db["Contract"].find_one({"flag":True,"contract_id":id})
+            #print(contractA)
+            # if(contractA["contract_id"]==""):
+            #     return {"error":"contractA is not defined"}
             
-            return {"result":"done"}
+            contractB = db["Contract"].find_one(
+                {"flag": False, "contract_id": id})
+            
+            # if(contractB==""):
+            #     return {"error":"contractB is not defined"}
+            verify["contractA"]=contractA["contract"]
+            verify["contractB"]=contractA["contract"]
+            hash_contractA=hash(contractA["contract"])
+            hash_contractB=hash(contractB["contract"])
+            print(hash_contractA,hash_contractB)
+            verify_hash= hash_contractA==hash_contractB
+            #print(verify_hash)
+            verify["verified_hash"]=verify_hash
+            userA = db["users"].find_one({"username": contractA["username"]})
+            userB = db["users"].find_one({"username": contractB["username"]})
+            signatureA_verify = jws.verify(
+                contractA["signatureA"],userA["private"] , algorithms=['HS256'])
+            signatureB_verify = jws.verify(
+                contractB["signatureB"],userB["private"] , algorithms=['HS256'])
+            
+            verify["signatureA_verified"]=signatureA_verify
+            verify["signatureB_verified"]=signatureB_verify
+            verify["contractDone"] = signatureA_verify == signatureB_verify
+            db["VerifiedContract"]=verify
+            
+            return {"result":verify}
+        
             
             # verificationA=jws.verify(request.signatureA, 'secret', algorithms=['HS256'])
             # verificationB = jws.verify(
