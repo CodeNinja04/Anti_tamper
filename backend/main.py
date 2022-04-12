@@ -201,11 +201,11 @@ def verify(id: str,request: Contract):
             # if(contractB==""):
             #     return {"error":"contractB is not defined"}
             verify["contractA"]=contractA["contract"]
-            verify["contractB"]=contractA["contract"]
+            verify["contractB"]=contractB["contract"]
             hash_contractA=hash(contractA["contract"])
             hash_contractB=hash(contractB["contract"])
             print(hash_contractA,hash_contractB)
-            verify_hash= hash_contractA==hash_contractB
+            verify_hash= str(hash_contractA==hash_contractB)
             #print(verify_hash)
             verify["verified_hash"]=verify_hash
             userA = db["users"].find_one({"username": contractA["username"]})
@@ -217,9 +217,9 @@ def verify(id: str,request: Contract):
             
             verify["signatureA_verified"]=signatureA_verify
             verify["signatureB_verified"]=signatureB_verify
-            verify["contractDone"] = signatureA_verify == signatureB_verify
-            db["VerifiedContract"]=verify
-            
+            verify["contractDone"] = str(signatureA_verify == signatureB_verify)
+            #db["VerifiedContract"].insert(dict(verify))
+            print(verify)
             return {"result":verify}
         
             
@@ -231,4 +231,58 @@ def verify(id: str,request: Contract):
     else:
         return {"error":"no contract with this id is aavialble pls check contract id"}
     
+    
+    
+@app.get("/contract/{id}")
+def get_contract(id:str):
+    res={}
+    contract=db["ContractForm"].find_one({"contract_id":id})
+    print(contract)
+    res["contract"]=contract["contract"]
+    res["userA"]=contract["userA"]
+    res["userB"]=contract["userB"]
+    #contract=dict(contract)
+    return {"result":res}
 
+
+@app.get("/contractA/{id}")
+def get_contractA(id:str):
+    res={}
+    contractA = db["Contract"].find_one({"flag": True, "contract_id": id})
+    res["username"]=contractA["username"]
+    res["contract"]=contractA["contract"]
+    res["createdby"]=contractA["createdBy"]
+    res["cretedfor"]=contractA["createdfor"]
+    res["flag"]=contractA["flag"]
+    res["contract_id"]=contractA["contract_id"]
+    return {"result":res}
+    
+
+@app.get("/contractB/{id}")
+def get_contractA(id:str):
+    res={}
+    contractB = db["Contract"].find_one({"flag": False, "contract_id": id})
+    res["username"]=contractB["username"]
+    res["contract"]=contractB["contract"]
+    res["createdby"]=contractB["createdBy"]
+    res["cretedfor"]=contractB["createdfor"]
+    res["flag"]=contractB["flag"]
+    res["contract_id"]=contractB["contract_id"]
+    return {"result": res}
+
+
+@app.get("/contract/{id}/verify")
+def get_contractA(id: str):
+    res={}
+    contract = db["VerifiedContract"].find_one({"contract_id": id})
+    
+    
+    res["userA"]=contract["userA"]
+    res["userB"]=contract["userB"]
+    res["contractA"]=contract["contractA"]
+    res["contractB"]=contract["contractB"]
+    res["verified_hash"] = contract["verified_hash"]
+    res["signatureA_verified"] = contract["signatureB_verified"]
+    res["signatureB_verified"] = contract["signatureB_verified"]
+    res["contractDone"]=contract["contractDone"]
+    return {"result": res}
