@@ -200,6 +200,7 @@ def verify(id: str,request: Contract):
             
             # if(contractB==""):
             #     return {"error":"contractB is not defined"}
+            verify["contract_id"]=contractA["contract_id"]
             verify["contractA"]=contractA["contract"]
             verify["contractB"]=contractB["contract"]
             hash_contractA=hash(contractA["contract"])
@@ -218,7 +219,7 @@ def verify(id: str,request: Contract):
             verify["signatureA_verified"]=signatureA_verify
             verify["signatureB_verified"]=signatureB_verify
             verify["contractDone"] = str(signatureA_verify == signatureB_verify)
-            #db["VerifiedContract"].insert(dict(verify))
+            db["VerifiedContract"].insert(dict(verify))
             print(verify)
             return {"result":verify}
         
@@ -252,6 +253,7 @@ def get_contractA(id:str):
     res["username"]=contractA["username"]
     res["contract"]=contractA["contract"]
     res["createdby"]=contractA["createdBy"]
+    res["signatureA"]=contractA["signatureA"]
     res["cretedfor"]=contractA["createdfor"]
     res["flag"]=contractA["flag"]
     res["contract_id"]=contractA["contract_id"]
@@ -277,8 +279,8 @@ def get_contractA(id: str):
     contract = db["VerifiedContract"].find_one({"contract_id": id})
     
     
-    res["userA"]=contract["userA"]
-    res["userB"]=contract["userB"]
+    res["userA"]=contract["usernameA"]
+    res["userB"]=contract["usernameB"]
     res["contractA"]=contract["contractA"]
     res["contractB"]=contract["contractB"]
     res["verified_hash"] = contract["verified_hash"]
