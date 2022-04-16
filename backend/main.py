@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 import os
 from jose import jws
 #from uuid import UUID
+from Crypto.Cipher import AES
 import uuid
 load_dotenv()
 
@@ -90,6 +91,16 @@ def create_user(request:User):
         hashed_pass = Hash.bcrypt(request.password)
         user_object = dict(request)
         user_object["password"] = hashed_pass
+        
+        # encrypt user secret
+        key= bytes(os.getenv("SECRET_KEY1"),"utf-8")
+        print(key)
+        cipher = AES.new(key, AES.MODE_EAX)
+        ciphertext, tag = cipher.encrypt_and_digest(bytes(request.private,"utf-8"))
+        print(ciphertext)
+        nonce=cipher.nonce
+        user_object["private"]=ciphertext
+        user_object['nonce']=nonce
         user_id = db["users"].insert(user_object)
 	# print(user)
         return {"res":"created"}
@@ -127,7 +138,17 @@ def sign(id: str,request:Sign):
     
     contract = db["ContractForm"].find_one({"contract_id":id})
     if(contract):
-        signed = jws.sign({"contract": contract["contract"]}, user["private"], algorithm='HS256')
+        
+        ciphertext=(user["private"])
+        print(ciphertext)
+        nonce=user["nonce"]
+        print(nonce)
+        key= bytes(os.getenv("SECRET_KEY1"),"utf-8")
+        cipher1 = AES.new(key, AES.MODE_EAX, nonce)
+        
+        private = cipher1.decrypt(ciphertext)
+        print(private)
+        signed = jws.sign({"contract": contract["contract"]}, private.decode("utf-8"), algorithm='HS256')
         sign_object = dict(request)
         hashed_pass = Hash.bcrypt(request.password)
         sign_object["contract"] =contract["contract"] 
@@ -156,7 +177,15 @@ def sign(id: str,request:Sign):
     
     contract = db["ContractForm"].find_one({"contract_id":id})
     if(contract):
-        signed = jws.sign({"contract": contract["contract"]}, user["private"], algorithm='HS256')
+        ciphertext = (user["private"])
+        print(ciphertext)
+        nonce = user["nonce"]
+        print(nonce)
+        key = bytes(os.getenv("SECRET_KEY1"), "utf-8")
+        cipher1 = AES.new(key, AES.MODE_EAX, nonce)
+        private = cipher1.decrypt(ciphertext)
+        print(private)
+        signed = jws.sign({"contract": contract["contract"]}, private.decode("utf-8"), algorithm='HS256')
         sign_object = dict(request)
         hashed_pass = Hash.bcrypt(request.password)
         sign_object["contract"] =contract["contract"]
@@ -186,20 +215,30 @@ def verify(id: str,request: Contract):
     if (contract_id):
         
         if(True):
-        # if(request.signatureA and request.signatureB):
+       
             
-            #logic for verification
             
             contractA = db["Contract"].find_one({"flag":True,"contract_id":id})
-            #print(contractA)
-            # if(contractA["contract_id"]==""):
-            #     return {"error":"contractA is not defined"}
+           
             
             contractB = db["Contract"].find_one(
                 {"flag": False, "contract_id": id})
+
+            userA = db["users"].find_one({"username": contractA["username"]})
+            userB = db["users"].find_one({"username": contractB["username"]})
             
-            # if(contractB==""):
-            #     return {"error":"contractB is not defined"}
+            ciphertext1=userA["private"]
+            nonce1=userA["nonce"]
+            key= bytes(os.getenv("SECRET_KEY1"),"utf-8")
+            cipher1 = AES.new(key, AES.MODE_EAX, nonce1)
+            private1 = cipher1.decrypt(ciphertext1)
+            
+            ciphertext2=userB["private"]
+            nonce2=userB["nonce"]
+            cipher2 = AES.new(key, AES.MODE_EAX, nonce2)
+            private2 = cipher2.decrypt(ciphertext2)
+
+          
             verify["contract_id"]=contractA["contract_id"]
             verify["contractA"]=contractA["contract"]
             verify["contractB"]=contractB["contract"]
@@ -209,12 +248,11 @@ def verify(id: str,request: Contract):
             verify_hash= str(hash_contractA==hash_contractB)
             #print(verify_hash)
             verify["verified_hash"]=verify_hash
-            userA = db["users"].find_one({"username": contractA["username"]})
-            userB = db["users"].find_one({"username": contractB["username"]})
+           
             signatureA_verify = jws.verify(
-                contractA["signatureA"],userA["private"] , algorithms=['HS256'])
+                contractA["signatureA"],private1.decode("utf-8") , algorithms=['HS256'])
             signatureB_verify = jws.verify(
-                contractB["signatureB"],userB["private"] , algorithms=['HS256'])
+                contractB["signatureB"], private2.decode("utf-8"), algorithms=['HS256'])
             
             verify["signatureA_verified"]=signatureA_verify
             verify["signatureB_verified"]=signatureB_verify
