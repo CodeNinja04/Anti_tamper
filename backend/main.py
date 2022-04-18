@@ -13,6 +13,8 @@ import os
 from jose import jws
 #from uuid import UUID
 from Crypto.Cipher import AES
+
+from sha256 import *;
 import uuid
 load_dotenv()
 
@@ -242,8 +244,10 @@ def verify(id: str,request: Contract):
             verify["contract_id"]=contractA["contract_id"]
             verify["contractA"]=contractA["contract"]
             verify["contractB"]=contractB["contract"]
-            hash_contractA=hash(contractA["contract"])
-            hash_contractB=hash(contractB["contract"])
+            
+            # hashing algorithm d
+            hash_contractA=sha256(contractA["contract"])
+            hash_contractB=sha256(contractB["contract"])
             print(hash_contractA,hash_contractB)
             verify_hash= str(hash_contractA==hash_contractB)
             #print(verify_hash)
