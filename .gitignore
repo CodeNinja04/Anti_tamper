@@ -1,4 +1,5 @@
 env
+new
 .env
 __pycache__
 tenv
