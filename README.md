@@ -5,14 +5,16 @@ so you can create the contract then both the parties sign the contract using jws
 
 
 <h3>TECH STACK </h3>
-1.FASTAPI
-2.MONGODB
+<ul>FASTAPI</ul>
+<ul>MONGODB</ul>
+
 
 <h3>ALGORITHM USED </h3>
-1.AES --> to encrypt user password
-2.HS256 --> It is used in digital signature
-3.SHA256 --> Used to  create hash for the contract 
-
+<li>
+  <ul>AES --> to encrypt user password</ul>
+<ul>HS256 --> It is used in digital signature</ul>
+<ul>SHA256 --> Used to  create hash for the contract </ul>
+</li>
 <h3>HOW TO RUN </h3>
 
 1. Clone the repo
