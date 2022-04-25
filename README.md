@@ -9,7 +9,7 @@ so you can create the contract then both the parties sign the contract using jws
 <ul>MONGODB</ul>
 
 
-<h3>ALGORITHM USED </h3>
+<h3>ALGORITHM USED</h3>
 <li>
 <ul>AES --> to encrypt user password</ul>
 <ul>HS256 --> It is used in digital signature</ul>
