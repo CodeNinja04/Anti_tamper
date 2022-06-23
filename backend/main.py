@@ -248,6 +248,8 @@ def verify(id: str,request: Contract):
             # hashing algorithm d
             hash_contractA=sha256(contractA["contract"])
             hash_contractB=sha256(contractB["contract"])
+            verify["hashA"] = hash_contractA
+            verify["hashB"] = hash_contractB
             print(hash_contractA,hash_contractB)
             verify_hash= str(hash_contractA==hash_contractB)
             #print(verify_hash)
